@@ -1,14 +1,12 @@
 {
   "packetVersion": "1.0",
-  "runRef": "run-1781246901357",
+  "runRef": "run-1781235241537",
   "profile": "default",
   "profileKey": "default-auto",
-  "createdAt": "2026-06-12T06:48:21.357Z",
+  "createdAt": "2026-06-12T03:34:01.537Z",
   "stageState": {
     "current": "Review",
     "completed": [
-      "Critical",
-      "Fetch",
       "Thinking",
       "Execution",
       "Review",

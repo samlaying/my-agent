@@ -1,9 +1,9 @@
 {
   "packetVersion": "1.0",
-  "runRef": "run-1781246901357",
+  "runRef": "run-1781231287500",
   "profile": "default",
   "profileKey": "default-auto",
-  "createdAt": "2026-06-12T06:48:21.357Z",
+  "createdAt": "2026-06-12T02:28:07.501Z",
   "stageState": {
     "current": "Review",
     "completed": [
@@ -11,8 +11,7 @@
       "Fetch",
       "Thinking",
       "Execution",
-      "Review",
-      "Meta-Review"
+      "Review"
     ],
     "resumeFrom": "Review",
     "stepNumber": 5

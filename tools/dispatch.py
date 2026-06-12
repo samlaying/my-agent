@@ -31,6 +31,13 @@ BUILTIN_TOOLS = [
     {"name": "remove_worktree", "description": "Remove worktree.", "input_schema": {"type": "object", "properties": {"name": {"type": "string"}, "discard_changes": {"type": "boolean"}}, "required": ["name"]}},
     {"name": "keep_worktree", "description": "Keep worktree.", "input_schema": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}},
     {"name": "connect_mcp", "description": "Connect MCP server.", "input_schema": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}},
+    {"name": "loop_triage", "description": "Run triage loop: inspect project, update LOOP_STATE.md.", "input_schema": {"type": "object", "properties": {}, "required": []}},
+    {"name": "loop_fix", "description": "Run fix loop: pick one inbox item, fix in worktree.", "input_schema": {"type": "object", "properties": {}, "required": []}},
+    {"name": "loop_status", "description": "Show loop state summary.", "input_schema": {"type": "object", "properties": {}, "required": []}},
+    {"name": "loop_inbox_add", "description": "Add item to loop inbox.", "input_schema": {"type": "object", "properties": {"item": {"type": "string"}}, "required": ["item"]}},
+    {"name": "loop_done", "description": "Move inbox item to done.", "input_schema": {"type": "object", "properties": {"item_hint": {"type": "string"}, "note": {"type": "string"}}, "required": ["item_hint"]}},
+    {"name": "loop_block", "description": "Move item to blocked.", "input_schema": {"type": "object", "properties": {"item_hint": {"type": "string"}, "reason": {"type": "string"}}, "required": ["item_hint"]}},
+    {"name": "loop_decision", "description": "Record a decision.", "input_schema": {"type": "object", "properties": {"decision": {"type": "string"}, "reason": {"type": "string"}}, "required": ["decision", "reason"]}},
 ]
 
 _handler_registry: dict[str, callable] = {}
@@ -52,6 +59,9 @@ def register_all_handlers():
     from tasks.worktree import create_worktree, remove_worktree, keep_worktree
     from plugins.skills import load_skill
     from plugins.mcp import connect_mcp
+    from agents.loop_state import (run_loop_triage, run_loop_fix, run_loop_status,
+                                   run_loop_inbox_add, run_loop_done, run_loop_block,
+                                   add_decision as run_loop_decision)
     for name, handler in [
         ("bash", run_bash), ("read_file", run_read), ("write_file", run_write),
         ("edit_file", run_edit), ("glob", run_glob), ("todo_write", run_todo_write),
@@ -68,6 +78,10 @@ def register_all_handlers():
         ("create_worktree", lambda name, task_id="": create_worktree(name, task_id)),
         ("remove_worktree", lambda name, discard_changes=False: remove_worktree(name, discard_changes)),
         ("keep_worktree", keep_worktree), ("connect_mcp", connect_mcp),
+        ("loop_triage", run_loop_triage), ("loop_fix", run_loop_fix),
+        ("loop_status", run_loop_status), ("loop_inbox_add", run_loop_inbox_add),
+        ("loop_done", run_loop_done), ("loop_block", run_loop_block),
+        ("loop_decision", run_loop_decision),
     ]:
         register_handler(name, handler)
 

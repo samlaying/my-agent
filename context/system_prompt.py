@@ -16,7 +16,9 @@ def assemble_system_prompt(context: dict) -> str:
          "spawn_teammate, send_message, check_inbox, "
          "request_shutdown, request_plan, review_plan, "
          "create_worktree, remove_worktree, keep_worktree, "
-         "connect_mcp. MCP tools: mcp__{server}__{tool}."),
+         "connect_mcp, "
+         "loop_triage, loop_fix, loop_status, loop_inbox_add, loop_done, loop_block, loop_decision. "
+         "MCP tools: mcp__{server}__{tool}."),
         f"Working directory: {WORKDIR}",
         f"Current time: {datetime.now().isoformat(timespec='seconds')}",
         "Skills catalog:\n" + list_skills() + "\nUse load_skill(name) when relevant.",

@@ -32,7 +32,7 @@ if __name__ == "__main__":
     CLI_ACTIVE = True
     tools, _ = assemble_tool_pool()
     print(f"my-agent: comprehensive coding agent (model: {MODEL})")
-    print("Commands: q/exit, /tasks, /team, /inbox, /compact, /crons, /logs")
+    print("Commands: q/exit, /tasks, /team, /inbox, /compact, /crons, /logs, /loop")
     print(f"Working directory: {WORKDIR}")
     print(f"Turn log: {LOG_FILE}\n")
 
@@ -70,6 +70,21 @@ if __name__ == "__main__":
             continue
         if query.strip() == "/crons":
             print(run_list_crons()); continue
+        if query.strip().startswith("/loop"):
+            from agents.loop_state import run_loop_status, run_loop_triage, run_loop_fix, add_to_inbox
+            parts = query.strip().split(maxsplit=1)
+            subcmd = parts[1] if len(parts) > 1 else "status"
+            if subcmd == "status":
+                print(run_loop_status())
+            elif subcmd == "triage":
+                print(run_loop_triage())
+            elif subcmd == "fix":
+                print(run_loop_fix())
+            elif subcmd.startswith("add "):
+                print(add_to_inbox(subcmd[4:]))
+            else:
+                print("/loop [status|triage|fix|add <item>]")
+            continue
         if query.strip() == "/logs":
             print(f"Log file: {LOG_FILE}")
             if LOG_FILE.exists():
