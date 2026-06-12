@@ -10,7 +10,7 @@ import json
 import subprocess
 
 # ── 注册所有 handler ──
-from tools.dispatch import register_all_handlers, assemble_tool_pool
+from tools.dispatch import register_all_handlers, assemble_all_tool_pool, assemble_tool_pool
 register_all_handlers()
 
 # ── 各模块导入 ──
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     CLI_ACTIVE = True
     tools, _ = assemble_tool_pool()
     print(f"my-agent: comprehensive coding agent (model: {cfg.MODEL})")
-    print("Commands: q/exit, /tasks, /team, /inbox, /compact, /crons, /logs, /loop, /model")
+    print("Commands: q/exit, /tasks, /team, /inbox, /compact, /crons, /logs, /loop, /model, /tools, /profile")
     print(f"Working directory: {WORKDIR}")
     print(f"Turn log: {LOG_FILE}\n")
 
@@ -100,6 +100,27 @@ if __name__ == "__main__":
                 if not result.startswith("Error"):
                     tools, _ = assemble_tool_pool()
                     print(f"  工具池已刷新，共 {len(tools)} 个工具")
+            continue
+        if query.strip().startswith("/tools"):
+            from tools.registry import list_tool_status, set_tool_enabled
+            parts = query.strip().split(maxsplit=2)
+            if len(parts) == 1:
+                all_tools, _ = assemble_all_tool_pool()
+                print(list_tool_status(all_tools))
+            elif len(parts) == 3 and parts[1] in ("on", "off"):
+                print(set_tool_enabled(parts[2], parts[1] == "on"))
+                tools, _ = assemble_tool_pool()
+                print(f"  工具池已刷新，共 {len(tools)} 个工具")
+            else:
+                print("/tools [on|off <tool_name>]")
+            continue
+        if query.strip().startswith("/profile"):
+            from tools.registry import set_active_profile
+            parts = query.strip().split(maxsplit=1)
+            profile_name = parts[1].strip() if len(parts) > 1 else None
+            print(set_active_profile(profile_name))
+            tools, _ = assemble_tool_pool()
+            print(f"  工具池已刷新，共 {len(tools)} 个工具")
             continue
         if query.strip() == "/logs":
             print(f"Log file: {LOG_FILE}")

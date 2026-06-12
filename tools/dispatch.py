@@ -2,6 +2,8 @@
 
 from core.state import mcp_clients
 from plugins.mcp import normalize_mcp_name
+from tools.registry import (filter_tools_and_handlers, list_tool_status, reload_tools,
+                            set_active_profile, set_tool_enabled)
 
 BUILTIN_TOOLS = [
     {"name": "bash", "description": "Run a shell command.", "input_schema": {"type": "object", "properties": {"command": {"type": "string"}, "run_in_background": {"type": "boolean"}}, "required": ["command"]}},
@@ -38,6 +40,12 @@ BUILTIN_TOOLS = [
     {"name": "loop_done", "description": "Move inbox item to done.", "input_schema": {"type": "object", "properties": {"item_hint": {"type": "string"}, "note": {"type": "string"}}, "required": ["item_hint"]}},
     {"name": "loop_block", "description": "Move item to blocked.", "input_schema": {"type": "object", "properties": {"item_hint": {"type": "string"}, "reason": {"type": "string"}}, "required": ["item_hint"]}},
     {"name": "loop_decision", "description": "Record a decision.", "input_schema": {"type": "object", "properties": {"decision": {"type": "string"}, "reason": {"type": "string"}}, "required": ["decision", "reason"]}},
+    # ── Tool control plane ──
+    {"name": "tool_status", "description": "Show active tool profile and enabled/disabled tools.", "input_schema": {"type": "object", "properties": {}, "required": []}},
+    {"name": "tool_enable", "description": "Enable a tool by name in the local tool config.", "input_schema": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}},
+    {"name": "tool_disable", "description": "Disable a tool by name in the local tool config.", "input_schema": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}},
+    {"name": "tool_profile", "description": "List profiles or switch active tool profile.", "input_schema": {"type": "object", "properties": {"name": {"type": "string"}}, "required": []}},
+    {"name": "tool_reload", "description": "Reload local tool configuration.", "input_schema": {"type": "object", "properties": {}, "required": []}},
 ]
 
 _handler_registry: dict[str, callable] = {}
@@ -82,10 +90,15 @@ def register_all_handlers():
         ("loop_status", run_loop_status), ("loop_inbox_add", run_loop_inbox_add),
         ("loop_done", run_loop_done), ("loop_block", run_loop_block),
         ("loop_decision", run_loop_decision),
+        ("tool_status", lambda: list_tool_status(_assemble_raw_tool_pool()[0])),
+        ("tool_enable", lambda name: set_tool_enabled(name, True)),
+        ("tool_disable", lambda name: set_tool_enabled(name, False)),
+        ("tool_profile", lambda name=None: set_active_profile(name)),
+        ("tool_reload", reload_tools),
     ]:
         register_handler(name, handler)
 
-def assemble_tool_pool() -> tuple[list[dict], dict]:
+def _assemble_raw_tool_pool() -> tuple[list[dict], dict]:
     tools = list(BUILTIN_TOOLS)
     handlers = dict(_handler_registry)
     for server_name, mcp_client in mcp_clients.items():
@@ -97,3 +110,9 @@ def assemble_tool_pool() -> tuple[list[dict], dict]:
                           "input_schema": tool_def.get("inputSchema", {})})
             handlers[prefixed] = lambda *, c=mcp_client, t=tool_def["name"], **kw: c.call_tool(t, kw)
     return tools, handlers
+
+def assemble_all_tool_pool() -> tuple[list[dict], dict]:
+    return _assemble_raw_tool_pool()
+
+def assemble_tool_pool() -> tuple[list[dict], dict]:
+    return filter_tools_and_handlers(*_assemble_raw_tool_pool())
