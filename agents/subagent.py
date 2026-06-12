@@ -1,6 +1,7 @@
 """agents.subagent — 隔离上下文的子 agent"""
 
-from core.config import client, MODEL, WORKDIR
+import core.config as cfg
+from core.config import WORKDIR
 from tools.builtin import run_bash, run_read, run_write, run_edit, run_glob, call_tool_handler
 from tools.hooks import trigger_hooks
 
@@ -24,7 +25,7 @@ SUB_HANDLERS = {"bash": run_bash, "read_file": run_read, "write_file": run_write
 def spawn_subagent(description: str) -> str:
     messages = [{"role": "user", "content": description}]
     for _ in range(30):
-        response = client.messages.create(model=MODEL, system=SUB_SYSTEM, messages=messages, tools=SUB_TOOLS, max_tokens=8000)
+        response = cfg.client.messages.create(model=cfg.MODEL, system=SUB_SYSTEM, messages=messages, tools=SUB_TOOLS, max_tokens=8000)
         messages.append({"role": "assistant", "content": response.content})
         if not _has_tool_use(response.content): break
         results = []

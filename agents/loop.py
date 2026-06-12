@@ -4,8 +4,9 @@ import json
 import time
 import threading
 
+import core.config as cfg
 from core.config import (DEFAULT_MAX_TOKENS, ESCALATED_MAX_TOKENS, CONTINUATION_PROMPT,
-                         CONTEXT_LIMIT, client)
+                         CONTEXT_LIMIT)
 from core.state import rounds_since_todo
 from tools.dispatch import assemble_tool_pool
 from tools.hooks import trigger_hooks
@@ -52,7 +53,7 @@ def inject_background_notifications(messages: list):
 def call_llm(messages: list, context: dict, tools: list, state, max_tokens: int):
     system = assemble_system_prompt(context)
     return with_retry(
-        lambda: client.messages.create(model=state.current_model, system=system,
+        lambda: cfg.client.messages.create(model=state.current_model, system=system,
                                        messages=messages, tools=tools, max_tokens=max_tokens),
         state)
 

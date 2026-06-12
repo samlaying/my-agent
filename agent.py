@@ -14,7 +14,8 @@ from tools.dispatch import register_all_handlers, assemble_tool_pool
 register_all_handlers()
 
 # ── 各模块导入 ──
-from core.config import WORKDIR, MODEL
+import core.config as cfg
+from core.config import WORKDIR
 from core.state import CLI_ACTIVE
 from tracing.turn_logger import (log_session_start, log_session_end,
                                  log_user_input, LOG_FILE)
@@ -31,8 +32,8 @@ from core.state import active_teammates
 if __name__ == "__main__":
     CLI_ACTIVE = True
     tools, _ = assemble_tool_pool()
-    print(f"my-agent: comprehensive coding agent (model: {MODEL})")
-    print("Commands: q/exit, /tasks, /team, /inbox, /compact, /crons, /logs, /loop")
+    print(f"my-agent: comprehensive coding agent (model: {cfg.MODEL})")
+    print("Commands: q/exit, /tasks, /team, /inbox, /compact, /crons, /logs, /loop, /model")
     print(f"Working directory: {WORKDIR}")
     print(f"Turn log: {LOG_FILE}\n")
 
@@ -84,6 +85,21 @@ if __name__ == "__main__":
                 print(add_to_inbox(subcmd[4:]))
             else:
                 print("/loop [status|triage|fix|add <item>]")
+            continue
+        if query.strip().startswith("/model"):
+            from core.config import list_providers, switch_model
+            parts = query.strip().split(maxsplit=1)
+            if len(parts) < 2:
+                print(list_providers())
+                print("\n用法: /model <供应商名>  切换模型")
+                print("  e.g. /model xiaomi")
+                print("  e.g. /model zhipu")
+            else:
+                result = switch_model(parts[1].strip())
+                print(result)
+                if not result.startswith("Error"):
+                    tools, _ = assemble_tool_pool()
+                    print(f"  工具池已刷新，共 {len(tools)} 个工具")
             continue
         if query.strip() == "/logs":
             print(f"Log file: {LOG_FILE}")
