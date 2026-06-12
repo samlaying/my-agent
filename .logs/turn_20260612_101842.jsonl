@@ -1,0 +1,2 @@
+{"event": "session_start", "ts": 1781230722.076534, "time": "2026-06-12T10:18:42", "session_id": "20260612_101842", "model": "glm-5.1", "workdir": "/Users/sam/03-Code/02-Own/my-agent", "tools_count": 27}
+{"event": "session_end", "ts": 1781230722.076588, "time": "2026-06-12T10:18:42", "session_id": "20260612_101842", "total_turns": 0, "log_file": "/Users/sam/03-Code/02-Own/my-agent/.logs/turn_20260612_101842.jsonl"}

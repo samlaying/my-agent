@@ -1,0 +1,9 @@
+.env
+.tasks/
+.worktrees/
+.transcripts/
+.mailboxes/
+.task_outputs/
+.memory/
+__pycache__/
+*.pyc

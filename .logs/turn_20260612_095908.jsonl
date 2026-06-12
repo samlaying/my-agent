@@ -1,0 +1,7 @@
+{"event": "session_start", "ts": 1781229548.573783, "time": "2026-06-12T09:59:08", "session_id": "20260612_095908", "model": "glm-5.1", "workdir": "/Users/sam/03-Code/02-Own/my-agent", "tools_count": 0}
+{"event": "user_input", "turn": 1, "ts": 1781229548.573886, "time": "2026-06-12T09:59:08", "content": "测试消息"}
+{"event": "llm_response", "turn": 1, "ts": 1781229548.5739222, "time": "2026-06-12T09:59:08", "stop_reason": "tool_use", "latency_ms": 1234.5, "text_preview": "", "tool_calls": [{"name": "bash", "input_preview": "{\"command\": \"ls\"}"}]}
+{"event": "tool_execution", "turn": 1, "ts": 1781229548.573953, "time": "2026-06-12T09:59:08", "tool": "bash", "input_preview": "{\"command\": \"ls\"}", "output_preview": "file1.py\nfile2.py", "output_len": 17, "latency_ms": 56.7, "blocked": false}
+{"event": "tool_execution", "turn": 1, "ts": 1781229548.5739799, "time": "2026-06-12T09:59:08", "tool": "bash", "input_preview": "{\"command\": \"sudo rm -rf /\"}", "output_preview": "Permission denied", "output_len": 17, "latency_ms": 0, "blocked": true}
+{"event": "error", "turn": 1, "ts": 1781229548.574006, "time": "2026-06-12T09:59:08", "error_type": "RateLimitError", "error_msg": "too many requests"}
+{"event": "session_end", "ts": 1781229548.5740259, "time": "2026-06-12T09:59:08", "session_id": "20260612_095908", "total_turns": 1, "log_file": "/Users/sam/03-Code/02-Own/my-agent/.logs/turn_20260612_095908.jsonl"}

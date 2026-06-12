@@ -1,0 +1,4 @@
+{"event": "session_start", "ts": 1781229622.743783, "time": "2026-06-12T10:00:22", "session_id": "20260612_100022", "model": "glm-5.1", "workdir": "/Users/sam/03-Code/02-Own/my-agent", "tools_count": 0}
+{"event": "user_input", "turn": 1, "ts": 1781229626.2465868, "time": "2026-06-12T10:00:26", "content": "你好哇"}
+{"event": "llm_response", "turn": 1, "ts": 1781229634.191571, "time": "2026-06-12T10:00:34", "stop_reason": "end_turn", "latency_ms": 7944.3, "text_preview": "你好！👋 有什么我可以帮你的吗？我看到你当前在 `/Users/sam/03-Code/02-Own/my-agent` 项目目录下，需要我帮你做些什么吗？", "tool_calls": []}
+{"event": "session_end", "ts": 1781230977.176328, "time": "2026-06-12T10:22:57", "session_id": "20260612_100022", "total_turns": 1, "log_file": "/Users/sam/03-Code/02-Own/my-agent/.logs/turn_20260612_100022.jsonl"}
