@@ -52,6 +52,9 @@ BUILTIN_TOOLS = [
     {"name": "dismiss_recommendation", "description": "Mark a recommendation dismissed/done/new by id.", "input_schema": {"type": "object", "properties": {"id": {"type": "string"}, "status": {"type": "string", "enum": ["dismissed", "done", "new"]}}, "required": ["id"]}},
     # ── Shared memory: time-space state ──
     {"name": "set_state", "description": "Update global time-space state (work_mode, day_type, location, etc.).", "input_schema": {"type": "object", "properties": {"key": {"type": "string"}, "value": {"type": "string"}}, "required": ["key", "value"]}},
+    # ── Multimodal rendering ──
+    {"name": "render_image", "description": "Display an image in terminal.", "input_schema": {"type": "object", "properties": {"path": {"type": "string"}, "width": {"type": "integer"}}, "required": ["path"]}},
+    {"name": "speak", "description": "Text-to-speech playback.", "input_schema": {"type": "object", "properties": {"text": {"type": "string"}, "voice": {"type": "string"}}, "required": ["text"]}},
 ]
 
 _handler_registry: dict[str, callable] = {}
@@ -79,6 +82,8 @@ def register_all_handlers():
     from recommendations.tools import (run_recommend, run_list_recommendations,
                                        run_dismiss_recommendation)
     from context.memory import MemoryService
+    from utils.renderer import MultimodalRenderer
+    _renderer = MultimodalRenderer()
     for name, handler in [
         ("bash", run_bash), ("read_file", run_read), ("write_file", run_write),
         ("edit_file", run_edit), ("glob", run_glob), ("todo_write", run_todo_write),
@@ -108,6 +113,8 @@ def register_all_handlers():
         ("list_recommendations", run_list_recommendations),
         ("dismiss_recommendation", lambda id, status="dismissed": run_dismiss_recommendation(id, status)),
         ("set_state", lambda key, value: (MemoryService().set_state(key, value), f"State '{key}' set to '{value}'.")[-1]),
+        ("render_image", lambda path, width=60: _renderer.render_image(path, width)),
+        ("speak", lambda text, voice="zh-CN-XiaoxiaoNeural": _renderer.speak(text, voice)),
     ]:
         register_handler(name, handler)
 
