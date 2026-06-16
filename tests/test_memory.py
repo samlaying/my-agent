@@ -40,3 +40,25 @@ def test_set_state_persists(tmp_path):
     svc.set_state("location", "home")
     raw = json.loads((tmp_path / "state.json").read_text())
     assert raw["location"] == "home"
+
+
+def test_shared_namespace_boosted(tmp_path):
+    """shared namespace 的结果比其他 namespace 权重更高"""
+    from agents.profile import MemoryPolicy
+
+    # 创建两个同内容的文件：一个在 shared/，一个在普通 namespace
+    # 使用英文以确保 token 匹配正常（中文 regex 会整串匹配）
+    shared_dir = tmp_path / "shared"
+    shared_dir.mkdir()
+    (shared_dir / "note.md").write_text("buy coffee 50 dollars at starbucks", encoding="utf-8")
+    (tmp_path / "food.md").write_text("buy coffee 50 dollars at starbucks", encoding="utf-8")
+
+    svc = MemoryService(root=tmp_path)
+    policy = MemoryPolicy(namespaces=["food", "shared"], max_chars=5000)
+    result = svc.retrieve("buy coffee 50", policy)
+
+    # shared 的内容应该出现在 food 之前（权重更高）
+    shared_pos = result.find("[shared]")
+    food_pos = result.find("[food]")
+    if shared_pos >= 0 and food_pos >= 0:
+        assert shared_pos < food_pos, "shared namespace should rank higher"

@@ -60,6 +60,8 @@ class MemoryService:
                 except OSError:
                     continue
                 score = len(query_tokens & _tokens(text)) if query_tokens else 0
+                if namespace == "shared":
+                    score *= 2  # shared namespace 加权
                 chunks.append((score, namespace, text.strip()))
 
         if not chunks and MEMORY_INDEX.exists():
