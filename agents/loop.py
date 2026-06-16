@@ -8,9 +8,12 @@ import core.config as cfg
 from core.config import (DEFAULT_MAX_TOKENS, ESCALATED_MAX_TOKENS, CONTINUATION_PROMPT,
                          CONTEXT_LIMIT)
 from core.state import rounds_since_todo
+from agents.profile import DEFAULT_PROFILE, AgentProfile
+from agents.runtime import (ContextBuilder, LLMGateway, OutputCollector, RuntimeSession,
+                            SchedulerBridge)
 from tools.dispatch import assemble_tool_pool
 from tools.hooks import trigger_hooks
-from tools.builtin import call_tool_handler
+from tools.executor import ToolExecutor
 from context.compaction import (tool_result_budget, snip_compact, micro_compact,
                                 estimate_size, compact_history, reactive_compact)
 from context.system_prompt import assemble_system_prompt
@@ -20,6 +23,7 @@ from teams.background import should_run_background, start_background_task, colle
 from scheduler.cron import consume_cron_queue
 from tracing.turn_logger import log_llm_response, log_tool_execution, log_error
 from utils.terminal import terminal_print
+from context.router import classify_intent
 
 
 def _has_tool_use(content) -> bool:
@@ -39,48 +43,56 @@ def prepare_context(messages: list) -> list:
 
 
 def build_user_content(results: list[dict]) -> list[dict]:
-    content = [{"type": "text", "text": n} for n in collect_background_results()]
-    content.extend(results)
-    return content
+    return OutputCollector().build_user_content(results)
 
 
 def inject_background_notifications(messages: list):
-    notes = collect_background_results()
-    if notes:
-        messages.append({"role": "user", "content": [{"type": "text", "text": n} for n in notes]})
+    OutputCollector().inject_background_notifications(RuntimeSession(messages=messages))
 
 
-def call_llm(messages: list, context: dict, tools: list, state, max_tokens: int):
-    system = assemble_system_prompt(context)
-    return with_retry(
-        lambda: cfg.client.messages.create(model=state.current_model, system=system,
-                                       messages=messages, tools=tools, max_tokens=max_tokens),
-        state)
+def call_llm(messages: list, context: dict, tools: list, state, max_tokens: int,
+             profile: AgentProfile | None = None):
+    session = RuntimeSession(messages=messages, context=context, profile=profile or DEFAULT_PROFILE)
+    return LLMGateway().call(session, tools, state, max_tokens)
 
 
-def agent_loop(messages: list, context: dict):
+def agent_loop(messages: list, context: dict, profile: AgentProfile | None = None):
     global rounds_since_todo
-    tools, handlers = assemble_tool_pool()
+    active_profile = profile or DEFAULT_PROFILE
+    session = RuntimeSession(messages=messages, context=context, profile=active_profile)
+    context_builder = ContextBuilder()
+    scheduler = SchedulerBridge()
+    output_collector = OutputCollector()
+    tools, handlers = assemble_tool_pool(active_profile.tool_profile)
     state = RecoveryState()
     max_tokens = DEFAULT_MAX_TOKENS
 
     while True:
-        for job in consume_cron_queue():
-            messages.append({"role": "user", "content": f"[Scheduled] {job.prompt}"})
+        # Route pre-classification: notify relevant agents (non-blocking)
+        if session.messages:
+            last_user = next((m for m in reversed(session.messages) if m.get("role") == "user"), None)
+            if last_user:
+                content = last_user.get("content", "")
+                if isinstance(content, str):
+                    intents = classify_intent(content)
+                    if intents:
+                        terminal_print(f"\033[33m[route] {', '.join(intents)}\033[0m")
+
+        for job in scheduler.inject_due_jobs(session):
             terminal_print(f"  \033[35m[cron inject] {job.prompt[:60]}\033[0m")
 
-        inject_background_notifications(messages)
+        output_collector.inject_background_notifications(session)
         if rounds_since_todo >= 3:
             messages.append({"role": "user", "content": "<reminder>Update your todos.</reminder>"})
             rounds_since_todo = 0
 
         prepare_context(messages)
-        context = update_context(context, messages)
-        tools, handlers = assemble_tool_pool()
+        context = context_builder.build(session)
+        tools, handlers = assemble_tool_pool(active_profile.tool_profile)
 
         t0 = time.time()
         try:
-            response = call_llm(messages, context, tools, state, max_tokens)
+            response = LLMGateway().call(session, tools, state, max_tokens)
         except Exception as e:
             log_error(type(e).__name__, str(e))
             if is_prompt_too_long_error(e) and not state.has_attempted_reactive_compact:
@@ -112,6 +124,15 @@ def agent_loop(messages: list, context: dict):
             trigger_hooks("Stop", messages); return
 
         results = []; compacted_now = False
+        executor = ToolExecutor(
+            handlers,
+            pre_hook=lambda block: trigger_hooks("PreToolUse", block),
+            post_hook=lambda block, output: trigger_hooks("PostToolUse", block, output),
+            logger=lambda name, args, output, latency_ms, blocked=False: log_tool_execution(
+                name, args, output, latency_ms, blocked=blocked
+            ),
+        )
+
         for block in response.content:
             if block.type != "tool_use": continue
             terminal_print(f"\033[36m> {block.name}\033[0m")
@@ -122,12 +143,6 @@ def agent_loop(messages: list, context: dict):
                 log_tool_execution("compact", {}, "[compacted]", (time.time() - t0) * 1000)
                 compacted_now = True; break
 
-            blocked = trigger_hooks("PreToolUse", block)
-            if blocked:
-                log_tool_execution(block.name, block.input, str(blocked), 0, blocked=True)
-                results.append({"type": "tool_result", "tool_use_id": block.id, "content": str(blocked)})
-                continue
-
             if should_run_background(block.name, block.input):
                 bg_id = start_background_task(block, handlers)
                 log_tool_execution(block.name, block.input, f"[bg:{bg_id}]", 0)
@@ -135,20 +150,16 @@ def agent_loop(messages: list, context: dict):
                                 "content": f"[Background task {bg_id} started.]"})
                 continue
 
-            t_tool = time.time()
-            handler = handlers.get(block.name)
-            output = call_tool_handler(handler, block.input, block.name)
-            tool_latency = (time.time() - t_tool) * 1000
-            log_tool_execution(block.name, block.input, output, tool_latency)
-            trigger_hooks("PostToolUse", block, output)
+            result = executor.execute(block)
+            output = result["content"]
             terminal_print(str(output)[:300])
 
             if block.name == "todo_write": rounds_since_todo = 0
             else: rounds_since_todo += 1
-            results.append({"type": "tool_result", "tool_use_id": block.id, "content": output})
+            results.append(result)
 
         if compacted_now: continue
-        messages.append({"role": "user", "content": build_user_content(results)})
+        messages.append({"role": "user", "content": output_collector.build_user_content(results)})
 
 
 def print_turn_assistants(messages: list, turn_start: int):

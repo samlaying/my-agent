@@ -29,14 +29,22 @@ TASKS_DIR = WORKDIR / ".tasks"
 WORKTREES_DIR = WORKDIR / ".worktrees"
 MEMORY_DIR = WORKDIR / ".memory"
 MEMORY_INDEX = MEMORY_DIR / "MEMORY.md"
+MEMORY_SHARED_DIR = MEMORY_DIR / "shared"
+MEMORY_STATE_PATH = MEMORY_DIR / "state.json"
 LOGS_DIR = WORKDIR / ".logs"
 MAILBOX_DIR = WORKDIR / ".mailboxes"
 DURABLE_PATH = WORKDIR / ".scheduled_tasks.json"
+
+# ── Agent 持久化目录（工具配置 / 推荐 都在这里）──
+AGENT_DIR = WORKDIR / ".agent"
+RECOMMENDATIONS_PATH = AGENT_DIR / "recommendations.json"
 
 TASKS_DIR.mkdir(exist_ok=True)
 WORKTREES_DIR.mkdir(exist_ok=True)
 LOGS_DIR.mkdir(exist_ok=True)
 MAILBOX_DIR.mkdir(exist_ok=True)
+AGENT_DIR.mkdir(exist_ok=True)
+MEMORY_SHARED_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── 阈值常量 ──
 DEFAULT_MAX_TOKENS = 8000
@@ -90,8 +98,14 @@ def _load_providers():
         _current_provider = {}
 
 
-def _make_client(provider: dict) -> Anthropic:
-    """根据供应商配置创建 Anthropic client"""
+def _make_client(provider: dict):
+    """根据供应商配置创建 client（Anthropic 或 OpenAI 兼容）"""
+    if provider.get("protocol") == "openai":
+        from openai import OpenAI
+        return OpenAI(
+            api_key=provider.get("api_key", "ollama"),
+            base_url=provider["base_url"],
+        )
     return Anthropic(
         api_key=provider["api_key"],
         base_url=provider.get("base_url", ""),
