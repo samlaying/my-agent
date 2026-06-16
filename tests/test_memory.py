@@ -62,3 +62,10 @@ def test_shared_namespace_boosted(tmp_path):
     food_pos = result.find("[food]")
     if shared_pos >= 0 and food_pos >= 0:
         assert shared_pos < food_pos, "shared namespace should rank higher"
+
+
+def test_set_state_tool_registered():
+    """set_state 工具已注册到 BUILTIN_TOOLS"""
+    from tools.dispatch import BUILTIN_TOOLS
+    names = [t["name"] for t in BUILTIN_TOOLS]
+    assert "set_state" in names

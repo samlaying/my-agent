@@ -46,6 +46,12 @@ BUILTIN_TOOLS = [
     {"name": "tool_disable", "description": "Disable a tool by name in the local tool config.", "input_schema": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}},
     {"name": "tool_profile", "description": "List profiles or switch active tool profile.", "input_schema": {"type": "object", "properties": {"name": {"type": "string"}}, "required": []}},
     {"name": "tool_reload", "description": "Reload local tool configuration.", "input_schema": {"type": "object", "properties": {}, "required": []}},
+    # ── Recommendations（定时推荐）──
+    {"name": "recommend", "description": "Refresh and show scheduled recommendations across tasks, loop, cron, tools, and memory.", "input_schema": {"type": "object", "properties": {"limit": {"type": "integer"}}, "required": []}},
+    {"name": "list_recommendations", "description": "List currently active recommendations without refreshing.", "input_schema": {"type": "object", "properties": {}, "required": []}},
+    {"name": "dismiss_recommendation", "description": "Mark a recommendation dismissed/done/new by id.", "input_schema": {"type": "object", "properties": {"id": {"type": "string"}, "status": {"type": "string", "enum": ["dismissed", "done", "new"]}}, "required": ["id"]}},
+    # ── Shared memory: time-space state ──
+    {"name": "set_state", "description": "Update global time-space state (work_mode, day_type, location, etc.).", "input_schema": {"type": "object", "properties": {"key": {"type": "string"}, "value": {"type": "string"}}, "required": ["key", "value"]}},
 ]
 
 _handler_registry: dict[str, callable] = {}
@@ -70,6 +76,9 @@ def register_all_handlers():
     from agents.loop_state import (run_loop_triage, run_loop_fix, run_loop_status,
                                    run_loop_inbox_add, run_loop_done, run_loop_block,
                                    add_decision as run_loop_decision)
+    from recommendations.tools import (run_recommend, run_list_recommendations,
+                                       run_dismiss_recommendation)
+    from context.memory import MemoryService
     for name, handler in [
         ("bash", run_bash), ("read_file", run_read), ("write_file", run_write),
         ("edit_file", run_edit), ("glob", run_glob), ("todo_write", run_todo_write),
@@ -95,6 +104,10 @@ def register_all_handlers():
         ("tool_disable", lambda name: set_tool_enabled(name, False)),
         ("tool_profile", lambda name=None: set_active_profile(name)),
         ("tool_reload", reload_tools),
+        ("recommend", lambda limit=12: run_recommend(limit)),
+        ("list_recommendations", run_list_recommendations),
+        ("dismiss_recommendation", lambda id, status="dismissed": run_dismiss_recommendation(id, status)),
+        ("set_state", lambda key, value: (MemoryService().set_state(key, value), f"State '{key}' set to '{value}'.")[-1]),
     ]:
         register_handler(name, handler)
 
@@ -114,5 +127,6 @@ def _assemble_raw_tool_pool() -> tuple[list[dict], dict]:
 def assemble_all_tool_pool() -> tuple[list[dict], dict]:
     return _assemble_raw_tool_pool()
 
-def assemble_tool_pool() -> tuple[list[dict], dict]:
-    return filter_tools_and_handlers(*_assemble_raw_tool_pool())
+def assemble_tool_pool(profile_name: str | None = None) -> tuple[list[dict], dict]:
+    tools, handlers = _assemble_raw_tool_pool()
+    return filter_tools_and_handlers(tools, handlers, profile_name=profile_name)
