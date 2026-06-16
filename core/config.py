@@ -29,14 +29,22 @@ TASKS_DIR = WORKDIR / ".tasks"
 WORKTREES_DIR = WORKDIR / ".worktrees"
 MEMORY_DIR = WORKDIR / ".memory"
 MEMORY_INDEX = MEMORY_DIR / "MEMORY.md"
+MEMORY_SHARED_DIR = MEMORY_DIR / "shared"
+MEMORY_STATE_PATH = MEMORY_DIR / "state.json"
 LOGS_DIR = WORKDIR / ".logs"
 MAILBOX_DIR = WORKDIR / ".mailboxes"
 DURABLE_PATH = WORKDIR / ".scheduled_tasks.json"
+
+# ── Agent 持久化目录（工具配置 / 推荐 都在这里）──
+AGENT_DIR = WORKDIR / ".agent"
+RECOMMENDATIONS_PATH = AGENT_DIR / "recommendations.json"
 
 TASKS_DIR.mkdir(exist_ok=True)
 WORKTREES_DIR.mkdir(exist_ok=True)
 LOGS_DIR.mkdir(exist_ok=True)
 MAILBOX_DIR.mkdir(exist_ok=True)
+AGENT_DIR.mkdir(exist_ok=True)
+MEMORY_SHARED_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── 阈值常量 ──
 DEFAULT_MAX_TOKENS = 8000
