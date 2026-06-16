@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -29,6 +30,24 @@ class MemoryService:
         if namespace_dir.exists():
             files.extend(sorted(namespace_dir.glob("*.md")))
         return files
+
+    def get_state(self) -> dict:
+        """读取全局时空状态。不存在则返回空 dict。"""
+        if not self.state_path.exists():
+            return {}
+        try:
+            return json.loads(self.state_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return {}
+
+    def set_state(self, key: str, value: str) -> None:
+        """更新全局状态并持久化。"""
+        state = self.get_state()
+        state[key] = value
+        self.state_path.write_text(
+            json.dumps(state, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
 
     def retrieve(self, query: str, policy: MemoryPolicy) -> str:
         query_tokens = _tokens(query)
