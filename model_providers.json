@@ -13,6 +13,14 @@
       "base_url": "https://open.bigmodel.cn/api/anthropic",
       "api_key": "f8e73f3160194a789ced01a4b818387e.WFV2y8KNOgMdVFka",
       "model_id": "glm-5.1"
+    },
+    {
+      "name": "ollama",
+      "description": "本地 Ollama（qwen2.5）",
+      "base_url": "http://localhost:11434/v1",
+      "api_key": "ollama",
+      "model_id": "qwen2.5:latest",
+      "protocol": "openai"
     }
   ],
   "default": "xiaomi"

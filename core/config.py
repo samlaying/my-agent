@@ -98,8 +98,14 @@ def _load_providers():
         _current_provider = {}
 
 
-def _make_client(provider: dict) -> Anthropic:
-    """根据供应商配置创建 Anthropic client"""
+def _make_client(provider: dict):
+    """根据供应商配置创建 client（Anthropic 或 OpenAI 兼容）"""
+    if provider.get("protocol") == "openai":
+        from openai import OpenAI
+        return OpenAI(
+            api_key=provider.get("api_key", "ollama"),
+            base_url=provider["base_url"],
+        )
     return Anthropic(
         api_key=provider["api_key"],
         base_url=provider.get("base_url", ""),
