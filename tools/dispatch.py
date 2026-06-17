@@ -57,15 +57,25 @@ BUILTIN_TOOLS = [
     {"name": "speak", "description": "Text-to-speech playback.", "input_schema": {"type": "object", "properties": {"text": {"type": "string"}, "voice": {"type": "string"}}, "required": ["text"]}},
     # ── Intent routing ──
     {"name": "route", "description": "Semantic intent router. Analyze input and dispatch to relevant agent profiles.", "input_schema": {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]}},
+    # ── Desktop pet mood ──
+    {"name": "set_mood", "description": "Set the pet's mood for visual feedback.", "input_schema": {"type": "object", "properties": {"mood": {"type": "string", "enum": ["idle", "thinking", "happy", "sad", "alert"]}, "detail": {"type": "string"}}, "required": ["mood"]}},
 ]
 
-_handler_registry: dict[str, callable] = {}
+_handler_registry: dict[str, object] = {}
 
-def register_handler(name: str, handler: callable):
+def register_handler(name: str, handler):
     _handler_registry[name] = handler
 
-def get_handler(name: str) -> callable | None:
+def get_handler(name: str):
     return _handler_registry.get(name)
+
+def _set_mood_handler(mood: str, detail: str = "") -> str:
+    """set_mood 工具 handler（REPL 模式下无 ws 则跳过）"""
+    try:
+        from ws.mood import set_mood
+        return set_mood(mood, detail)
+    except ImportError:
+        return f"Mood '{mood}' (no WS server)"
 
 def register_all_handlers():
     from tools.builtin import run_bash, run_read, run_write, run_edit, run_glob, run_todo_write
@@ -119,6 +129,7 @@ def register_all_handlers():
         ("render_image", lambda path, width=60: _renderer.render_image(path, width)),
         ("speak", lambda text, voice="zh-CN-XiaoxiaoNeural": _renderer.speak(text, voice)),
         ("route", lambda text: str(classify_intent(text))),
+        ("set_mood", lambda mood, detail="": _set_mood_handler(mood, detail)),
     ]:
         register_handler(name, handler)
 

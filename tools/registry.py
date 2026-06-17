@@ -36,6 +36,24 @@ DEFAULT_PROFILES: dict[str, dict[str, Any]] = {
         "tools": ["bash", "todo_write"],
         "disabled": ["write_file", "edit_file"],
     },
+    "learning": {
+        "description": "Learning workflow with read-only files, skills, scheduling, and progress tracking.",
+        "categories": ["file", "skills", "context", "automation", "core", "control"],
+        "tools": ["bash"],
+        "disabled": ["write_file", "edit_file"],
+    },
+    "butler": {
+        "description": "Personal operations workflow for reminders, records, and routine reports.",
+        "categories": ["automation", "core", "task", "skills", "context", "control"],
+        "tools": [],
+        "disabled": ["bash", "write_file", "edit_file", "remove_worktree"],
+    },
+    "digital_self": {
+        "description": "Draft-first social assistant profile; external actions should require confirmation.",
+        "categories": ["file", "skills", "context", "mcp", "control"],
+        "tools": ["todo_write"],
+        "disabled": ["write_file", "edit_file", "bash", "remove_worktree"],
+    },
     "automation": {
         "description": "Background work, cron jobs, teammates, worktrees, and project loops.",
         "categories": ["*"],
@@ -88,6 +106,9 @@ DEFAULT_TOOL_META: dict[str, dict[str, Any]] = {
     "writer_loop": {"category": "writing", "risk": "medium"},
     "score_draft": {"category": "writing", "risk": "low"},
     "writer_status": {"category": "writing", "risk": "low"},
+    "recommend": {"category": "context", "risk": "low"},
+    "list_recommendations": {"category": "context", "risk": "low"},
+    "dismiss_recommendation": {"category": "context", "risk": "low"},
 }
 
 for _name in CONTROL_TOOLS:
@@ -171,12 +192,13 @@ def is_tool_enabled(name: str, tool_def: dict | None = None, profile_name: str |
     return _profile_allows(name, tool_meta(name, tool_def), profile)
 
 
-def filter_tools_and_handlers(tools: list[dict], handlers: dict[str, Any]) -> tuple[list[dict], dict[str, Any]]:
+def filter_tools_and_handlers(tools: list[dict], handlers: dict[str, Any],
+                              profile_name: str | None = None) -> tuple[list[dict], dict[str, Any]]:
     enabled_tools = []
     enabled_handlers = {}
     for tool_def in tools:
         name = tool_def["name"]
-        if is_tool_enabled(name, tool_def):
+        if is_tool_enabled(name, tool_def, profile_name=profile_name):
             enabled_tools.append(tool_def)
             if name in handlers:
                 enabled_handlers[name] = handlers[name]
@@ -234,14 +256,15 @@ def reload_tools() -> str:
     return f"Reloaded tool config from {CONFIG_PATH} (active profile: {state['activeProfile']})."
 
 
-def prompt_tool_summary() -> str:
+def prompt_tool_summary(profile_name: str | None = None) -> str:
     state = load_tool_state()
-    profile = state["profiles"].get(state["activeProfile"], {})
+    active = profile_name or state["activeProfile"]
+    profile = state["profiles"].get(active, state["profiles"].get("coding", {}))
     categories = ", ".join(profile.get("categories", [])) or "(none)"
     explicit = ", ".join(profile.get("tools", [])) or "(none)"
     disabled = ", ".join(profile.get("disabled", [])) or "(none)"
     return (
-        f"Tool profile: {state['activeProfile']}\n"
+        f"Tool profile: {active}\n"
         f"Enabled categories: {categories}\n"
         f"Explicit tools: {explicit}\n"
         f"Profile-disabled tools: {disabled}\n"

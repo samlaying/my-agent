@@ -5,5 +5,12 @@
 .mailboxes/
 .task_outputs/
 .memory/
+.logs/
+.agent/
 __pycache__/
 *.pyc
+.gitnexus
+.venv/
+.scheduled_tasks.json
+node_modules/
+dist/

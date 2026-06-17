@@ -174,6 +174,13 @@ def cron_autorun_loop(history: list, context: dict):
         time.sleep(1)
         fired = consume_cron_queue()
         if not fired: continue
+        # WS 桌面宠物通知钩子（无 ws 时自动跳过）
+        try:
+            from ws.cron_hook import on_cron_fired
+            for job in fired:
+                on_cron_fired(job)
+        except ImportError:
+            pass
         with agent_lock:
             turn_start = len(history)
             for job in fired:

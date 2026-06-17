@@ -33,7 +33,7 @@ if __name__ == "__main__":
     CLI_ACTIVE = True
     tools, _ = assemble_tool_pool()
     print(f"my-agent: comprehensive coding agent (model: {cfg.MODEL})")
-    print("Commands: q/exit, /tasks, /team, /inbox, /compact, /crons, /logs, /loop, /model, /tools, /profile")
+    print("Commands: q/exit, /tasks, /team, /inbox, /compact, /crons, /reco, /logs, /loop, /model, /tools, /profile")
     print(f"Working directory: {WORKDIR}")
     print(f"Turn log: {LOG_FILE}\n")
 
@@ -42,6 +42,11 @@ if __name__ == "__main__":
         print("[init] Created git repo for worktree support\n")
 
     log_session_start(tools_count=len(tools))
+
+    # 定时推荐：注册一条每日刷新 cron（幂等，已存在则跳过）
+    from recommendations.engine import ensure_scheduled
+    if ensure_scheduled():
+        print("[reco] Scheduled daily recommendations refresh (09:17 weekdays, durable).\n")
 
     history = []
     context = update_context({}, [])
@@ -71,6 +76,9 @@ if __name__ == "__main__":
             continue
         if query.strip() == "/crons":
             print(run_list_crons()); continue
+        if query.strip() == "/reco":
+            from recommendations.engine import status as reco_status
+            print(reco_status()); continue
         if query.strip().startswith("/loop"):
             from agents.loop_state import run_loop_status, run_loop_triage, run_loop_fix, add_to_inbox
             parts = query.strip().split(maxsplit=1)
