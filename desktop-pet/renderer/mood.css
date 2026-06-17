@@ -1,0 +1,81 @@
+/* mood.css — 情绪动画（每个 mood 一个 class） */
+
+/* ── idle: 呼吸 ── */
+.mood-idle .pet-body {
+  animation: breathe 3s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.03); }
+}
+
+/* ── thinking: 头倾斜 + 省略号 ── */
+.mood-thinking .pet-head {
+  animation: head-tilt 1.5s ease-in-out infinite;
+}
+.mood-thinking .pet-indicator::after {
+  content: "...";
+  animation: dots 1.2s steps(3) infinite;
+  color: #ffb84a;
+}
+@keyframes head-tilt {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(5deg); }
+}
+@keyframes dots {
+  0%   { content: "."; }
+  33%  { content: ".."; }
+  66%  { content: "..."; }
+}
+
+/* ── happy: 弹跳 + 笑脸 ── */
+.mood-happy .pet {
+  animation: bounce 0.5s ease infinite;
+}
+.mood-happy .pet-mouth {
+  height: 7px;
+  border-bottom: 2px solid #4aff7a;
+}
+.mood-happy .pet-arm {
+  animation: arms-up 0.5s ease infinite alternate;
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes arms-up {
+  from { transform: rotate(10deg); }
+  to   { transform: rotate(-20deg); }
+}
+
+/* ── sad: 耷拉 + 撇嘴 ── */
+.mood-sad .pet-head {
+  transform: translateY(2px);
+}
+.mood-sad .pet-mouth {
+  border-bottom: none;
+  border-top: 2px solid #9a9aff;
+  border-radius: 50% 50% 0 0;
+}
+.mood-sad .pet-eye {
+  height: 5px;
+}
+
+/* ── alert: 抖动 + 瞪大眼 ── */
+.mood-alert .pet {
+  animation: shake 0.25s ease infinite;
+}
+.mood-alert .pet-eye {
+  height: 11px;
+  width: 9px;
+}
+.mood-alert .pet-indicator::after {
+  content: "!";
+  color: #ff4a4a;
+  font-size: 18px;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}

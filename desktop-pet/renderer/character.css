@@ -1,0 +1,126 @@
+/* character.css — 纯 CSS 小人（64×80px blob creature） */
+
+.pet {
+  position: relative;
+  width: 64px;
+  height: 80px;
+  cursor: grab;
+  -webkit-app-region: drag;
+  margin-bottom: 8px;
+}
+
+/* ── 头 ── */
+.pet-head {
+  width: 48px;
+  height: 44px;
+  background: #f5f5f5;
+  border-radius: 50% 50% 45% 45%;
+  margin: 0 auto;
+  position: relative;
+  box-shadow: inset 0 -3px 6px rgba(0,0,0,0.04);
+}
+
+.pet-eye {
+  width: 7px;
+  height: 9px;
+  background: #333;
+  border-radius: 50%;
+  position: absolute;
+  top: 16px;
+  animation: blink 4s infinite;
+}
+.pet-eye.left  { left: 12px; }
+.pet-eye.right { right: 12px; }
+
+.pet-mouth {
+  width: 10px;
+  height: 5px;
+  border-bottom: 2px solid #888;
+  border-radius: 0 0 50% 50%;
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pet-blush {
+  width: 8px;
+  height: 5px;
+  background: rgba(255,150,150,0.3);
+  border-radius: 50%;
+  position: absolute;
+  top: 24px;
+}
+.pet-blush.left  { left: 4px; }
+.pet-blush.right { right: 4px; }
+
+/* ── 身体 ── */
+.pet-body {
+  width: 40px;
+  height: 26px;
+  background: #eaeaea;
+  border-radius: 8px 8px 12px 12px;
+  margin: -4px auto 0;
+  position: relative;
+}
+
+.pet-arm {
+  width: 10px;
+  height: 18px;
+  background: #e0e0e0;
+  border-radius: 6px;
+  position: absolute;
+  top: 4px;
+}
+.pet-arm.left  { left: -8px; transform: rotate(10deg); }
+.pet-arm.right { right: -8px; transform: rotate(-10deg); }
+
+/* ── 腿 ── */
+.pet-legs {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: -2px;
+}
+
+.pet-leg {
+  width: 12px;
+  height: 12px;
+  background: #ddd;
+  border-radius: 4px 4px 6px 6px;
+}
+
+/* ── 尾巴 ── */
+.pet-tail {
+  width: 18px;
+  height: 7px;
+  background: #ddd;
+  border-radius: 0 8px 8px 0;
+  position: absolute;
+  bottom: 12px;
+  right: -10px;
+  transform-origin: left center;
+  animation: tail-wag 2s ease-in-out infinite;
+}
+
+/* ── 情绪指示器（头上） ── */
+.pet-indicator {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 16px;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+/* ── 通用动画 ── */
+@keyframes blink {
+  0%, 95%, 100% { transform: scaleY(1); }
+  97% { transform: scaleY(0.1); }
+}
+
+@keyframes tail-wag {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(12deg); }
+}

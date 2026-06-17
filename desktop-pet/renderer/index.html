@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Desktop Pet</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="character.css">
+  <link rel="stylesheet" href="mood.css">
+</head>
+<body>
+  <div id="pet-container">
+    <div id="bubble-container"></div>
+    <div id="pet" class="pet mood-idle">
+      <div class="pet-head">
+        <div class="pet-eye left"></div>
+        <div class="pet-eye right"></div>
+        <div class="pet-mouth"></div>
+        <div class="pet-blush left"></div>
+        <div class="pet-blush right"></div>
+      </div>
+      <div class="pet-body">
+        <div class="pet-arm left"></div>
+        <div class="pet-arm right"></div>
+      </div>
+      <div class="pet-legs">
+        <div class="pet-leg left"></div>
+        <div class="pet-leg right"></div>
+      </div>
+      <div class="pet-tail"></div>
+      <div class="pet-indicator"></div>
+    </div>
+    <div id="chat-bar" class="chat-bar">
+      <textarea id="chat-input" class="chat-input" placeholder="Ask me..." rows="1"></textarea>
+    </div>
+  </div>
+  <script src="ws-client.js"></script>
+  <script src="bubble.js"></script>
+  <script src="chat.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
