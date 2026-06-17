@@ -33,7 +33,7 @@ if __name__ == "__main__":
     CLI_ACTIVE = True
     tools, _ = assemble_tool_pool()
     print(f"my-agent: comprehensive coding agent (model: {cfg.MODEL})")
-    print("Commands: q/exit, /tasks, /team, /inbox, /compact, /crons, /reco, /logs, /loop, /model, /tools, /profile")
+    print("Commands: q/exit, /tasks, /team, /inbox, /compact, /crons, /reminders, /reco, /logs, /loop, /model, /tools, /profile")
     print(f"Working directory: {WORKDIR}")
     print(f"Turn log: {LOG_FILE}\n")
 
@@ -76,6 +76,9 @@ if __name__ == "__main__":
             continue
         if query.strip() == "/crons":
             print(run_list_crons()); continue
+        if query.strip() == "/reminders":
+            from reminders.tools import run_list_reminders
+            print(run_list_reminders()); continue
         if query.strip() == "/reco":
             from recommendations.engine import status as reco_status
             print(reco_status()); continue

@@ -65,6 +65,7 @@ DURABLE_PATH = WORKDIR / ".scheduled_tasks.json"
 # ── Agent 持久化目录（工具配置 / 推荐 都在这里）──
 AGENT_DIR = WORKDIR / ".agent"
 RECOMMENDATIONS_PATH = AGENT_DIR / "recommendations.json"
+REMINDERS_PATH = WORKDIR / ".reminders.json"
 
 TASKS_DIR.mkdir(exist_ok=True)
 WORKTREES_DIR.mkdir(exist_ok=True)

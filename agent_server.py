@@ -25,35 +25,59 @@ from ws.server import WSServer
 from ws.mood import init as mood_init, set_mood, infer_mood
 from ws.bubble import init as bubble_init, send_bubble
 from ws.output import init as output_init, ws_print
-from ws.protocol import BUBBLE_STATUS
+from ws.protocol import BUBBLE_STATUS, MSG_SNOOZE
+from ws.reminder_hook import init as reminder_hook_init, on_reminder_fired
 
 # ── 消息队列（WS → agent 主循环）──
 message_queue: list[str] = []
 queue_lock = threading.Lock()
+ws_server: WSServer = None  # 由 main() 注入
 
 
 async def on_ws_message(msg: dict, websocket):
     """WS 消息回调"""
-    if msg.get("type") == "user_message":
+    msg_type = msg.get("type")
+    if msg_type == "user_message":
         text = msg.get("data", {}).get("text", "")
         if text:
             with queue_lock:
                 message_queue.append(text)
+    elif msg_type == "snooze":
+        data = msg.get("data", {})
+        rem_id = data.get("id", "")
+        minutes = data.get("minutes")
+        if rem_id:
+            from reminders.manager import snooze_reminder, disable_today
+            if minutes == "today":
+                result = disable_today(rem_id)
+            else:
+                result = snooze_reminder(rem_id, minutes)
+            print(f"[reminder] {result}")
+    else:
+        # 其他消息类型（bubble/reminder 等）广播给所有客户端
+        await ws_server.broadcast(msg)
 
 
 def main():
+    global ws_server
     CLI_ACTIVE = False
     tools, _ = assemble_tool_pool()
 
     # ── 启动 WS 服务器 ──
     ws = WSServer(host="localhost", port=8765)
     ws.on_message = on_ws_message
+    ws_server = ws
     ws.start()
 
     # ── 注入 WS 实例到各模块 ──
     mood_init(ws)
     bubble_init(ws)
     output_init(ws)
+    reminder_hook_init(ws)
+
+    # ── 提醒系统：触发 → WS 推送 ──
+    from reminders.manager import set_fire_callback
+    set_fire_callback(on_reminder_fired)
 
     # ── 替换 terminal_print ──
     import utils.terminal as terminal_module

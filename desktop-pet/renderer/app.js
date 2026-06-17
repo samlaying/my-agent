@@ -21,8 +21,22 @@ onMsg('assistant_text', (data) => {
 });
 
 onMsg('tool_activity', (data) => {
-  // 可选：在气泡里显示工具状态
   if (data.status === 'start') {
     appendBubble(`\n⚙ ${data.tool}...`);
   }
 });
+
+// ── 全屏提醒 ──
+onMsg('reminder', (data) => {
+  // 通知主进程创建全屏 overlay
+  if (window.reminderAPI) {
+    window.reminderAPI.showOverlay(data);
+  }
+});
+
+// ── 主进程转发 WS 消息（snooze 等）──
+if (window.reminderAPI && window.reminderAPI.onWSSend) {
+  window.reminderAPI.onWSSend((msg) => {
+    wsSend(msg.type, msg.data);
+  });
+}

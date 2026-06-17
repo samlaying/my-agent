@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Reminder</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      user-select: none;
+      -webkit-app-region: drag;
+    }
+
+    /* ── 提醒视图 ── */
+    .icon {
+      font-size: 72px;
+      margin-bottom: 32px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .message {
+      font-size: 28px;
+      color: #1a1a1a;
+      text-align: center;
+      max-width: 600px;
+      line-height: 1.5;
+      margin-bottom: 48px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 24px;
+      -webkit-app-region: no-drag;
+    }
+
+    .btn {
+      padding: 16px 48px;
+      font-size: 18px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      font-weight: 500;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .btn:active { transform: translateY(0); }
+
+    .btn-ok {
+      background: #1a1a1a;
+      color: #ffffff;
+    }
+
+    .btn-snooze {
+      background: #f0f0f0;
+      color: #333333;
+      border: 1px solid #ddd;
+    }
+
+    .hint {
+      margin-top: 16px;
+      font-size: 13px;
+      color: #999;
+    }
+
+    /* ── 稍后子菜单 ── */
+    .snooze-menu {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      -webkit-app-region: no-drag;
+    }
+
+    .snooze-menu .menu-title {
+      font-size: 20px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .snooze-menu .btn {
+      width: 280px;
+      padding: 14px 32px;
+      font-size: 16px;
+    }
+
+    .btn-snooze-opt {
+      background: #f5f5f5;
+      color: #333;
+      border: 1px solid #e0e0e0;
+    }
+
+    .btn-snooze-off {
+      background: #fff5f5;
+      color: #c44;
+      border: 1px solid #fcc;
+    }
+
+    /* ── 倒计时视图 ── */
+    .countdown-view {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .countdown-ring {
+      width: 200px;
+      height: 200px;
+      margin-bottom: 32px;
+      position: relative;
+    }
+
+    .countdown-ring svg { transform: rotate(-90deg); }
+
+    .countdown-ring-bg {
+      fill: none;
+      stroke: #eee;
+      stroke-width: 4;
+    }
+
+    .countdown-ring-fg {
+      fill: none;
+      stroke: #1a1a1a;
+      stroke-width: 4;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear;
+    }
+
+    .countdown-number {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 72px;
+      font-weight: 200;
+      color: #1a1a1a;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .countdown-label {
+      font-size: 20px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <!-- 提醒视图 -->
+  <div id="reminder-view">
+    <div class="icon">💡</div>
+    <div class="message" id="message">Time to take a break!</div>
+    <div class="buttons">
+      <button class="btn btn-ok" id="btn-ok">好的</button>
+      <button class="btn btn-snooze" id="btn-snooze">稍后</button>
+    </div>
+    <div class="hint" id="hint">5 秒无操作将自动进入倒计时</div>
+  </div>
+
+  <!-- 稍后子菜单 -->
+  <div id="snooze-menu" class="snooze-menu">
+    <div class="icon">⏰</div>
+    <div class="menu-title">多久后再提醒？</div>
+    <button class="btn btn-snooze-opt" data-snooze="30">30 分钟后</button>
+    <button class="btn btn-snooze-opt" data-snooze="60">1 小时后</button>
+    <button class="btn btn-snooze-opt" data-snooze="120">2 小时后</button>
+    <button class="btn btn-snooze-off" data-snooze="today">今天不再提醒</button>
+  </div>
+
+  <!-- 倒计时视图 -->
+  <div id="countdown-view" class="countdown-view">
+    <div class="countdown-ring">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <circle class="countdown-ring-bg" cx="100" cy="100" r="90"/>
+        <circle class="countdown-ring-fg" id="ring-fg" cx="100" cy="100" r="90"
+                stroke-dasharray="565.48" stroke-dashoffset="0"/>
+      </svg>
+      <div class="countdown-number" id="countdown-num">30</div>
+    </div>
+    <div class="countdown-label">秒后自动关闭</div>
+  </div>
+
+  <script>
+    const COUNTDOWN_SEC = 30;
+    const AUTO_DISMISS_SEC = 5;
+    const CIRCUMFERENCE = 2 * Math.PI * 90;
+
+    const params = new URLSearchParams(window.location.search);
+    const remId = params.get('id') || '';
+    const message = params.get('message') || 'Time to take a break!';
+
+    document.getElementById('message').textContent = message;
+
+    const reminderView = document.getElementById('reminder-view');
+    const snoozeMenu = document.getElementById('snooze-menu');
+    const countdownView = document.getElementById('countdown-view');
+    const countdownNum = document.getElementById('countdown-num');
+    const ringFg = document.getElementById('ring-fg');
+
+    let autoTimer = null;
+    let interacted = false;
+
+    // ── 倒计时 ──
+    function startCountdown() {
+      interacted = true;
+      clearTimeout(autoTimer);
+      reminderView.style.display = 'none';
+      snoozeMenu.style.display = 'none';
+      countdownView.style.display = 'flex';
+
+      let remaining = COUNTDOWN_SEC;
+      ringFg.style.strokeDashoffset = '0';
+      countdownNum.textContent = remaining;
+
+      const timer = setInterval(() => {
+        remaining--;
+        countdownNum.textContent = remaining;
+        ringFg.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - remaining / COUNTDOWN_SEC));
+        if (remaining <= 0) {
+          clearInterval(timer);
+          window.reminderAPI.dismiss();
+        }
+      }, 1000);
+    }
+
+    // ── 5 秒自动倒计时 ──
+    function startAutoTimer() {
+      autoTimer = setTimeout(() => {
+        if (!interacted) startCountdown();
+      }, AUTO_DISMISS_SEC * 1000);
+    }
+
+    // ── 好的 → 倒计时 ──
+    document.getElementById('btn-ok').addEventListener('click', () => {
+      startCountdown();
+    });
+
+    // ── 稍后 → 子菜单 ──
+    document.getElementById('btn-snooze').addEventListener('click', () => {
+      interacted = true;
+      clearTimeout(autoTimer);
+      reminderView.style.display = 'none';
+      snoozeMenu.style.display = 'flex';
+    });
+
+    // ── 稍后子菜单选项 ──
+    document.querySelectorAll('[data-snooze]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.dataset.snooze;
+        if (val === 'today') {
+          window.reminderAPI.snooze(remId, 'today');
+        } else {
+          window.reminderAPI.snooze(remId, parseInt(val, 10));
+        }
+      });
+    });
+
+    // ── 启动 ──
+    startAutoTimer();
+  </script>
+</body>
+</html>

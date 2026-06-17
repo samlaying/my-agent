@@ -59,6 +59,10 @@ BUILTIN_TOOLS = [
     {"name": "route", "description": "Semantic intent router. Analyze input and dispatch to relevant agent profiles.", "input_schema": {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]}},
     # ── Desktop pet mood ──
     {"name": "set_mood", "description": "Set the pet's mood for visual feedback.", "input_schema": {"type": "object", "properties": {"mood": {"type": "string", "enum": ["idle", "thinking", "happy", "sad", "alert"]}, "detail": {"type": "string"}}, "required": ["mood"]}},
+    # ── Full-screen reminders（全屏提醒）──
+    {"name": "create_reminder", "description": "Create a full-screen reminder (Beijing time cron). Default snooze 30min. Covers entire screen with dismiss/snooze/countdown.", "input_schema": {"type": "object", "properties": {"message": {"type": "string"}, "cron": {"type": "string"}, "snooze_min": {"type": "integer", "default": 30}, "enabled": {"type": "boolean"}}, "required": ["message", "cron"]}},
+    {"name": "list_reminders", "description": "List all reminders with status.", "input_schema": {"type": "object", "properties": {}, "required": []}},
+    {"name": "manage_reminder", "description": "Manage reminders: enable/disable individual, snooze, delete, disable_today (all or one), enable_all (re-enable everything).", "input_schema": {"type": "object", "properties": {"action": {"type": "string", "enum": ["enable", "disable", "snooze", "delete", "disable_today", "enable_all"]}, "rem_id": {"type": "string"}, "minutes": {"type": "integer"}}, "required": ["action"]}},
 ]
 
 _handler_registry: dict[str, object] = {}
@@ -93,6 +97,7 @@ def register_all_handlers():
                                    add_decision as run_loop_decision)
     from recommendations.tools import (run_recommend, run_list_recommendations,
                                        run_dismiss_recommendation)
+    from reminders.tools import run_create_reminder, run_list_reminders, run_manage_reminder
     from context.memory import MemoryService
     from context.router import classify_intent
     from utils.renderer import MultimodalRenderer
@@ -130,6 +135,9 @@ def register_all_handlers():
         ("speak", lambda text, voice="zh-CN-XiaoxiaoNeural": _renderer.speak(text, voice)),
         ("route", lambda text: str(classify_intent(text))),
         ("set_mood", lambda mood, detail="": _set_mood_handler(mood, detail)),
+        ("create_reminder", lambda message, cron, snooze_min=10, enabled=True: run_create_reminder(message, cron, snooze_min, enabled)),
+        ("list_reminders", run_list_reminders),
+        ("manage_reminder", lambda action, rem_id="", minutes=None: run_manage_reminder(action, rem_id, minutes)),
     ]:
         register_handler(name, handler)
 
