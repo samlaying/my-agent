@@ -4,11 +4,38 @@ import json
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
+
+# ── 代理绕过：把所有 provider 的域名加入 NO_PROXY ──
+# macOS 系统代理（Clash 等）会导致 Python httpx SSL 握手超时，
+# 但 curl 通常配置了绕过。这里自动把 provider 域名加入 NO_PROXY。
+def _build_no_proxy():
+    """从 model_providers.json 提取域名，追加到 NO_PROXY"""
+    providers_path = Path.cwd() / "model_providers.json"
+    domains = set()
+    if providers_path.exists():
+        try:
+            data = json.loads(providers_path.read_text(encoding="utf-8"))
+            for p in data.get("providers", []):
+                url = p.get("base_url", "")
+                if url:
+                    host = urlparse(url).hostname
+                    if host:
+                        domains.add(host)
+        except (json.JSONDecodeError, KeyError):
+            pass
+    existing = os.environ.get("NO_PROXY", "")
+    all_no = ",".join(sorted(domains | {d.strip() for d in existing.split(",") if d.strip()}))
+    if all_no:
+        os.environ["NO_PROXY"] = all_no
+        os.environ["no_proxy"] = all_no
+
+_build_no_proxy()
 
 # 使用自定义 base URL 时清除 session token
 if os.getenv("ANTHROPIC_BASE_URL"):
